@@ -10,6 +10,7 @@
 	"author": "Fidelion",
 	"license": "ISC",
 	"dependencies": {
+		"@studydefi/money-legos": "^2.4.2",
 		"@uniswap/sdk": "^3.0.3",
 		"dotenv": "^16.0.0",
 		"web3": "^1.7.1"

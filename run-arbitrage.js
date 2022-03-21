@@ -5,6 +5,8 @@ const abis = require("./abis");
 const { mainnet: addresses } = require("./addresses");
 const web3 = new Web3(process.env.INFURA_URL);
 
+web3.eth.accounts.wallet.add(process.env.PRIVATE_KEY);
+
 const kyber = new web3.eth.Contract(
 	abis.kyber.kyberNetworkProxy,
 	addresses.kyber.kyberNetworkProxy
