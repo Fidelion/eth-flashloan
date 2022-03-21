@@ -45,6 +45,29 @@ contract Flashloan is ICallee, DydxFlashloanBase {
         ArbInfo memory arbInfo = abi.decode(data, (ArbInfo));
         uint256 balanceDai = dai.balanceOf(address(this));
 
+        if(arbInfo == Direction.KyberToUniswap) {
+            // Buy Ether on Kyber
+            dai.approve(address(kyber), balanceDai);
+            (uint expectedRate, ) = kyber.getExpectedRate(
+                dai,
+                IERC20(KYBER_ETH_ADDRESS),
+                balanceDai
+            );
+
+            kyber.swapTokenToEther(dai, balanceDai, expectedRate);
+
+            // Sell Ether on Uniswap
+            address[] memory path = new address[](2);
+            path[0] = address(weth);
+            path[1] = address(dai);
+            uint[] memory minOuts = uniswap.getAmountOut(address(this).balance, path);
+            uniswap.swapExactETHForTokens.value(address(this).balance)(
+                minOuts[1],
+                path,
+                address(this),
+                now
+            );
+        }
         // Note that you can ignore the line below
         // if your dydx account (this contract in this case)
         // has deposited at least ~2 Wei of assets into the account
@@ -54,6 +77,9 @@ contract Flashloan is ICallee, DydxFlashloanBase {
             "Not enough funds to repay dydx loan!"
         );
     }
+
+    // Fallback function
+    function() external payable {}
 
     function initiateFlashloan(
         address _solo, 
