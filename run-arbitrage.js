@@ -1,5 +1,6 @@
 require("dotenv").config();
 const Web3 = require("web3");
+const { ChainId, Fetcher, TokenAmount, Pair } = require("@uniswap/sdk");
 const abis = require("./abis");
 const { mainnet: addresses } = require("./addresses");
 const web3 = new Web3(process.env.INFURA_URL);
@@ -16,36 +17,53 @@ const AMOUNT_DAI_WEI = web3.utils.toWei(
 	(AMOUNT_ETH * RECENT_ETH_PRICE).toString()
 );
 
-web3.eth
-	.subscribe("newBlockHeaders")
-	.on("data", async (block) => {
-		console.log(`New Block. Block # ${block.number}`);
+const init = async () => {
+	const [dai, weth] = await Promise.all(
+		[addresses.tokens.dai, addresses.tokens.weth].map((tokenAddress) =>
+			Fetcher.fetchTokenData(ChainId.MAINNET, tokenAddress)
+		)
+	);
+	const daiWeth = await Fetcher.fetchPairData(dai, weth);
+	web3.eth
+		.subscribe("newBlockHeaders")
+		.on("data", async (block) => {
+			console.log(`New Block. Block # ${block.number}`);
 
-		const kyberResults = await Promise.all([
-			kyber.methods
-				.getExpectedRate(
-					addresses.tokens.dai,
-					"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-					AMOUNT_DAI_WEI
-				)
-				.call(),
-			kyber.methods
-				.getExpectedRate(
-					"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-					addresses.tokens.dai,
-					AMOUNT_ETH_WEI
-				)
-				.call(),
-		]);
+			const kyberResults = await Promise.all([
+				kyber.methods
+					.getExpectedRate(
+						addresses.tokens.dai,
+						"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+						AMOUNT_DAI_WEI
+					)
+					.call(),
+				kyber.methods
+					.getExpectedRate(
+						"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+						addresses.tokens.dai,
+						AMOUNT_ETH_WEI
+					)
+					.call(),
+			]);
 
-		const kyberRates = {
-			buy: parseFloat(1 / (kyberResults[0].expectedRate / 10 ** 18)),
-			sell: parseFloat(kyberResults[1].expectedRate / 10 ** 18),
-		};
+			const kyberRates = {
+				buy: parseFloat(1 / (kyberResults[0].expectedRate / 10 ** 18)),
+				sell: parseFloat(kyberResults[1].expectedRate / 10 ** 18),
+			};
 
-		console.log("Kyber ETH/DAI");
-		console.log(kyberRates);
-	})
-	.on("error", (error) => {
-		console.log(error);
-	});
+			console.log("Kyber ETH/DAI");
+			console.log(kyberRates);
+
+			const uniswapResults = await Promise.all([
+				daiWeth.getOutputAmount(new TokenAmount(dai, AMOUNT_DAI_WEI)),
+				daiWeth.getOutputAmount(new TokenAmount(weth, AMOUNT_ETH_WEI)),
+			]);
+
+			console.log(uniswapResults);
+		})
+		.on("error", (error) => {
+			console.log(error);
+		});
+};
+
+init();
