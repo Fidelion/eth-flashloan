@@ -20,6 +20,25 @@ web3.eth
 	.subscribe("newBlockHeaders")
 	.on("data", async (block) => {
 		console.log(`New Block. Block # ${block.number}`);
+
+		const kyberResults = await Promise.all([
+			kyber.methods
+				.getExpectedRate(
+					addresses.tokens.dai,
+					"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+					AMOUNT_DAI_WEI
+				)
+				.call(),
+			kyber.methods
+				.getExpectedRate(
+					"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+					addresses.tokens.dai,
+					AMOUNT_ETH_WEI
+				)
+				.call(),
+		]);
+
+		console.log(kyberResults);
 	})
 	.on("error", (error) => {
 		console.log(error);
