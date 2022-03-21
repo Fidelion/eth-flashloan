@@ -1,0 +1,17 @@
+{
+	"name": "fls-app",
+	"version": "1.0.0",
+	"description": "Backend app for running arbitrage script for the purpose of flashloans",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Fidelion",
+	"license": "ISC",
+	"dependencies": {
+		"@uniswap/sdk": "^3.0.3",
+		"dotenv": "^16.0.0",
+		"web3": "^1.7.1"
+	}
+}
