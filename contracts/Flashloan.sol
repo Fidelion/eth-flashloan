@@ -19,22 +19,31 @@ contract Flashloan is ICallee, DydxFlashloanBase {
         uint256 repayAmount;
     }
 
+    event NewArbitrage {
+        Direction direction,
+        uint profit,
+        uint date
+    }
+
     IKyberNetworkProxy kyber;
     IUniswapV2Router02 uniswap;
     IWeth weth;
     IERC20 dai;
+    address beneficiary;
     address constant KYBER_ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     constructor(
-        kyberAddress,
-        uniswapAddress,
-        wethAddress,
-        daiAddress
+        address kyberAddress,
+        address uniswapAddress,
+        address wethAddress,
+        address daiAddress,
+        address beneficiaryAddress
     ) {
         kyber = IKyberNetworkProxy(kyberAddress);
         uniswap = IUniswapV2Router02(uniswapAddress);
         weth = IWeth(wethAddress);
         dai = IERC20(daiAddress);
+        beneficiary = beneficiaryAddress;
     }
 
     function callFunction(
@@ -67,15 +76,46 @@ contract Flashloan is ICallee, DydxFlashloanBase {
                 address(this),
                 now
             );
+        } else {
+            // Buy Ether on Uniswap
+            dai.approve(address(uniswap), balanceDai);
+
+            address[] memory path = new address[](2);
+            path[0] = address(dai);
+            path[1] = address(weth);
+            uint[] memory minOuts = uniswap.getAmountOut(balanceDai, path);
+            uniswap.swapExactTokensForETH.value(
+                balanceDai,
+                minOuts[1],
+                path,
+                address(this),
+                now
+            );
+
+            // Sell Ether on Kyber
+            (uint expectedRate, ) = kyber.getExpectedRate(
+                IERC20(KYBER_ETH_ADDRESS),
+                dai,
+                address(this).balance
+            );
+
+            kyber.swapEtherToToken.value(address(this).balance)(
+                dai, 
+                expectedRate
+            );
         }
         // Note that you can ignore the line below
         // if your dydx account (this contract in this case)
         // has deposited at least ~2 Wei of assets into the account
         // to balance out the collaterization ratio
         require(
-            balanceDai >= arbInfo.repayAmount,
+            dai.balanceOf(address(this)) >= arbInfo.repayAmount,
             "Not enough funds to repay dydx loan!"
         );
+
+        uint profit = dai.balanceOf(address(this)) - arbInfo.repayAmount;
+        dai.transfer(beneficiary, profit);
+        emit NewArbitrage(arbInfo.direction, profit, now);
     }
 
     // Fallback function
