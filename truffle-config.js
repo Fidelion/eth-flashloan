@@ -72,6 +72,11 @@ module.exports = {
 				new HDWalletProvider(process.env.PRIVATE_KEY, process.env.INFURA_URL),
 			network_id: 1,
 		},
+		// development: {
+		// 	host: "127.0.0.1", // Localhost (default: none)
+		// 	port: 7545, // Standard Ethereum port (default: none)
+		// 	network_id: "*", // Any network (default: none)
+		// },
 		// Useful for private networks
 		// private: {
 		// provider: () => new HDWalletProvider(mnemonic, `https://network.io`),
@@ -88,7 +93,7 @@ module.exports = {
 	// Configure your compilers
 	compilers: {
 		solc: {
-			version: "0.8.9", // Fetch exact version from solc-bin (default: truffle's version)
+			version: "^0.5.0", // Fetch exact version from solc-bin (default: truffle's version)
 			// docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
 			// settings: {          // See the solidity docs for advice about optimization and evmVersion
 			//  optimizer: {

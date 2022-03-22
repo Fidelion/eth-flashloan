@@ -19,11 +19,11 @@ contract Flashloan is ICallee, DydxFlashloanBase {
         uint256 repayAmount;
     }
 
-    event NewArbitrage {
+    event NewArbitrage (
         Direction direction,
         uint profit,
         uint date
-    }
+    );
 
     IKyberNetworkProxy kyber;
     IUniswapV2Router02 uniswap;
@@ -149,7 +149,7 @@ contract Flashloan is ICallee, DydxFlashloanBase {
 
         operations[2] = _getDepositAction(marketId, repayAmount);
 
-        Account.Info[] memory accountInfos = new Account.info[](1);
+        Account.Info[] memory accountInfos = new Account.Info[](1);
         accountInfos[0] = _getAccountInfo();
 
         solo.operate(accountInfos, operations);
